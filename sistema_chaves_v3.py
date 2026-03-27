@@ -1,44 +1,58 @@
 import time
+import os
 import mysql.connector
 from mysql.connector import Error
 from enum import Enum
 
-# Importar o controlador LCD
+# Importar o controlador LCD local (lcd16x2_controller.py)
 from lcd16x2_controller import (
-    iniciar_lcd, lcd_texto, lcd_texto_pausado,
-    lcd_limpar, LCD_OK
+    iniciar_lcd, lcd_texto, lcd_limpar, LCD_OK
 )
 
-# =========================
-# MÁQUINA DE ESTADOS
-# =========================
+# ============================================================
+# ⚙️ MÁQUINA DE ESTADOS
+# ============================================================
 class Estado(Enum):
-    IDLE                = 1   # Esperando qualquer crachá
-    PROFESSOR_OK        = 2   # Professor reconhecido, verificando situação
-    AGUARDANDO_DEVOLUCAO = 3  # Professor tem chave, aguarda passar a chave
-    AGUARDANDO_CHAVE    = 4   # Professor livre, aguarda chave para pegar
+    IDLE                 = 1   # Esperando qualquer crachá
+    PROFESSOR_OK         = 2   # Professor reconhecido, verificando situação
+    AGUARDANDO_DEVOLUCAO = 3   # Professor tem chave, aguarda passar a chave
+    AGUARDANDO_CHAVE     = 4   # Professor livre, aguarda chave para pegar
 
-# Contexto da transação atual (substitui o Estado.professor_atual)
+# Contexto da transação atual
 ctx = {
     "professor": None,        # {"id": int, "nome": str}
     "emprestimo": None,       # (emprestimo_id, chave_id) quando há devolução pendente
 }
 
-# =========================
-# BANCO DE DADOS
-# =========================
+# ============================================================
+# 🗄️ BANCO DE DADOS (Com Retry Automático para Docker)
+# ============================================================
 def conectar_banco():
-    """Conecta ao MariaDB. Host 'db' funciona no Docker, 'localhost' fora dele."""
-    import os
-    host = os.environ.get("DB_HOST", "localhost")
-    return mysql.connector.connect(
-        host=host,
-        user=os.environ.get("DB_USER", "app_chaves"),
-        password=os.environ.get("DB_PASSWORD", "chaves123"),
-        database=os.environ.get("DB_NAME", "chaves_professores"),
-        autocommit=False,
-        connection_timeout=5
-    )
+    """Conecta ao MariaDB com sistema de Retry para Docker."""
+    host = os.environ.get("DB_HOST", "db")
+    user = os.environ.get("DB_USER", "app_chaves")
+    password = os.environ.get("DB_PASSWORD", "chaves123")
+    database = os.environ.get("DB_NAME", "chaves_professores")
+
+    tentativas = 5
+    for i in range(tentativas):
+        try:
+            print(f"[{time.strftime('%H:%M:%S')}] Tentativa de conexão ao banco ({i+1}/{tentativas})...")
+            conn = mysql.connector.connect(
+                host=host,
+                user=user,
+                password=password,
+                database=database,
+                autocommit=False,
+                connection_timeout=5
+            )
+            print("✅ Conectado ao MariaDB com sucesso!")
+            return conn
+        except Error as err:
+            print(f"⚠️ Banco ainda não respondeu (Erro {err.errno}). Aguardando 5 segundos...")
+            time.sleep(5)
+            
+    raise Exception("❌ Não foi possível conectar ao banco de dados após várias tentativas.")
 
 def garantir_conexao(conexao):
     """Reconecta automaticamente se a conexão caiu."""
@@ -52,9 +66,9 @@ def garantir_conexao(conexao):
         except Error:
             return None
 
-# =========================
-# LEITURA RFID
-# =========================
+# ============================================================
+# 📡 LEITURA RFID
+# ============================================================
 def aguardar_rfid_idle(leitor):
     """
     Modo IDLE: fica bloqueado esperando qualquer cartão sem timeout.
@@ -69,7 +83,7 @@ def aguardar_rfid_idle(leitor):
                 print(f"RFID lido: {id_str}")
                 return id_str
         except Exception as e:
-            print(f"Erro de leitura RFID: {e}")
+            print(f"Erro de leitura RFID no IDLE: {e}")
         time.sleep(0.15)
 
 def ler_rfid_com_timeout(leitor, timeout=20):
@@ -94,7 +108,7 @@ def ler_rfid_com_timeout(leitor, timeout=20):
         except Exception as e:
             falhas += 1
             if falhas > 50:
-                print("Muitas falhas de leitura, abortando.")
+                print("Muitas falhas de leitura, abortando timeout.")
                 break
 
         time.sleep(0.15)
@@ -102,12 +116,11 @@ def ler_rfid_com_timeout(leitor, timeout=20):
     print("Timeout — nenhum cartão lido.")
     return None
 
-# =========================
-# CONSULTAS AO BANCO
-# =========================
+# ============================================================
+# 🔍 CONSULTAS AO BANCO
+# ============================================================
 def buscar_professor(cursor, rfid):
     """Busca professor pelo código RFID. Retorna dict ou None."""
-    # CORREÇÃO: coluna é 'codigo', não 'codigo_rfid'
     cursor.execute(
         "SELECT id, nome FROM professores WHERE codigo = %s LIMIT 1",
         (rfid,)
@@ -119,7 +132,6 @@ def buscar_professor(cursor, rfid):
 
 def buscar_chave(cursor, rfid):
     """Busca chave pelo código RFID. Retorna dict ou None."""
-    # CORREÇÃO: coluna é 'codigo', não 'codigo_rfid'
     cursor.execute(
         "SELECT id, nome_da_chave FROM chaves WHERE codigo = %s LIMIT 1",
         (rfid,)
@@ -143,9 +155,9 @@ def professor_tem_chave_ativa(cursor, professor_id):
     )
     return cursor.fetchone()
 
-# =========================
-# TRANSAÇÕES
-# =========================
+# ============================================================
+# 📝 TRANSAÇÕES
+# ============================================================
 def registrar_devolucao(cursor, conexao, emprestimo_id):
     """Registra devolução. Retorna True/False."""
     try:
@@ -177,6 +189,7 @@ def registrar_emprestimo(cursor, conexao, professor_id, chave_id):
     Retorna: 'ok' | 'professor_com_chave' | 'chave_indisponivel' | 'erro'
     """
     try:
+        # Verifica se o professor já tem alguma chave pendente
         cursor.execute(
             "SELECT id FROM professor_chaves WHERE professor_id = %s AND data_devolucao IS NULL LIMIT 1",
             (professor_id,)
@@ -184,6 +197,7 @@ def registrar_emprestimo(cursor, conexao, professor_id, chave_id):
         if cursor.fetchone():
             return "professor_com_chave"
 
+        # Verifica se a chave escolhida já está emprestada a outra pessoa
         cursor.execute(
             "SELECT id FROM professor_chaves WHERE chave_id = %s AND data_devolucao IS NULL LIMIT 1",
             (chave_id,)
@@ -207,19 +221,10 @@ def registrar_emprestimo(cursor, conexao, professor_id, chave_id):
             pass
         return "erro"
 
-# =========================
-# MÁQUINA DE ESTADOS PRINCIPAL
-# =========================
+# ============================================================
+# 🌀 MÁQUINA DE ESTADOS PRINCIPAL
+# ============================================================
 def loop_principal(leitor, conexao):
-    """
-    Loop principal da máquina de estados.
-
-    Arquitetura:
-    - IDLE: fica bloqueado esperando crachá (sem timeout, sem loop ocupado)
-    - Ao reconhecer o professor, decide o próximo estado imediatamente
-    - Cada estado seguinte aguarda a chave com timeout de 20s
-    - Sempre volta para IDLE ao final da operação (ok ou timeout)
-    """
     estado = Estado.IDLE
 
     while True:
@@ -247,19 +252,18 @@ def loop_principal(leitor, conexao):
                 professor = buscar_professor(cursor, rfid)
 
                 if not professor:
-                    print(f"RFID {rfid} não é professor.")
+                    print(f"RFID {rfid} não é professor cadastrado.")
                     lcd_texto("Nao reconhecido", "Tente novamente")
                     time.sleep(2)
-                    continue  # Fica no IDLE
+                    continue 
 
-                # Professor reconhecido
                 ctx["professor"] = professor
                 print(f"Professor: {professor['nome']}")
                 lcd_texto("Bem-vindo!", professor["nome"][:16])
                 time.sleep(1.5)
                 estado = Estado.PROFESSOR_OK
 
-            # ── PROFESSOR_OK: decide o fluxo ─────────────────────────────
+            # ── PROFESSOR_OK: decide o fluxo (Retirada ou Devolução) ──────
             elif estado == Estado.PROFESSOR_OK:
                 professor = ctx["professor"]
                 chave_ativa = professor_tem_chave_ativa(cursor, professor["id"])
@@ -268,14 +272,14 @@ def loop_principal(leitor, conexao):
                     emprestimo_id, chave_id, nome_chave = chave_ativa
                     ctx["emprestimo"] = (emprestimo_id, chave_id)
 
-                    print(f"Chave pendente: {nome_chave}")
+                    print(f"Chave pendente com o professor: {nome_chave}")
                     lcd_texto("Devolver:", nome_chave[:16])
-                    time.sleep(1)
+                    time.sleep(1.5)
                     estado = Estado.AGUARDANDO_DEVOLUCAO
                 else:
-                    print("Professor pode pegar chave.")
+                    print("Professor livre. Pode pegar chave.")
                     lcd_texto("Pegar chave:", "Passe a chave")
-                    time.sleep(1)
+                    time.sleep(1.5)
                     estado = Estado.AGUARDANDO_CHAVE
 
             # ── AGUARDANDO_DEVOLUCAO ──────────────────────────────────────
@@ -300,7 +304,7 @@ def loop_principal(leitor, conexao):
                     continue
 
                 if chave["id"] != chave_id_esperada:
-                    print(f"Chave errada! Esperava {chave_id_esperada}, recebeu {chave['id']}")
+                    print(f"Chave errada! Esperava ID {chave_id_esperada}, recebeu {chave['id']}")
                     lcd_texto("Chave errada!", "Tente novamente")
                     time.sleep(2)
                     estado = Estado.IDLE
@@ -315,7 +319,7 @@ def loop_principal(leitor, conexao):
 
                 estado = Estado.IDLE
 
-            # ── AGUARDANDO_CHAVE (empréstimo) ─────────────────────────────
+            # ── AGUARDANDO_CHAVE (Empréstimo) ─────────────────────────────
             elif estado == Estado.AGUARDANDO_CHAVE:
                 professor = ctx["professor"]
 
@@ -368,22 +372,23 @@ def loop_principal(leitor, conexao):
             except:
                 pass
 
-# =========================
-# MAIN
-# =========================
+# ============================================================
+# 🚀 MAIN (Inicialização do Sistema)
+# ============================================================
 def main():
-    print("Iniciando Sistema de Controle de Chaves...")
-    print(f"Hora: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    print("\n🚀 Iniciando Sistema de Controle de Chaves...")
+    print(f"📅 Data/Hora: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
 
+    # Iniciar LCD
     iniciar_lcd()
 
     # Inicializar RFID
     try:
         from mfrc522 import SimpleMFRC522
         leitor_rfid = SimpleMFRC522()
-        print("Leitor RFID inicializado.")
+        print("✅ Leitor RFID inicializado.")
     except Exception as e:
-        print(f"Erro ao inicializar RFID: {e}")
+        print(f"❌ Erro ao inicializar RFID: {e}")
         lcd_texto("ERRO RFID!", "Verifique hw")
         return
 
@@ -392,37 +397,37 @@ def main():
     try:
         print("Conectando ao banco de dados...")
         conexao = conectar_banco()
-        print("Conectado ao banco!")
         lcd_texto("SISTEMA PRONTO", "Aguardando...")
         time.sleep(2)
 
+        # Entra no loop infinito da máquina de estados
         loop_principal(leitor_rfid, conexao)
 
     except KeyboardInterrupt:
-        print("\nEncerrando (Ctrl+C)...")
+        print("\n🛑 Encerrando sistema (Ctrl+C)...")
         lcd_texto("Encerrando...", "Aguarde")
 
     except Error as e:
-        print(f"Erro de conexão: {e}")
+        print(f"❌ Erro fatal de conexão: {e}")
         lcd_texto("ERRO BD!", str(e)[:16])
 
     finally:
         if conexao and conexao.is_connected():
             try:
                 conexao.close()
-                print("Conexão BD fechada.")
+                print("Conexão com o Banco de Dados fechada.")
             except:
                 pass
 
         try:
             import RPi.GPIO as GPIO
             GPIO.cleanup()
-            print("GPIO limpo.")
+            print("Pinos GPIO limpos com sucesso.")
         except:
             pass
 
         lcd_texto("SISTEMA", "ENCERRADO")
-        print("Sistema finalizado.")
+        print("🏁 Sistema finalizado.")
 
 if __name__ == "__main__":
     main()
