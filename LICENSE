@@ -19,3 +19,98 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+docker logs chaves_db
+2026-03-27 18:44:15+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:10.11.16+maria~ubu2204 started.
+2026-03-27 18:44:16+00:00 [Warn] [Entrypoint]: /sys/fs/cgroup///memory.pressure not writable, functionality unavailable to MariaDB
+2026-03-27 18:44:16+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+2026-03-27 18:44:16+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:10.11.16+maria~ubu2204 started.
+2026-03-27 18:44:16+00:00 [Note] [Entrypoint]: Initializing database files
+2026-03-27 18:44:16 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+create_uring failed: falling back to libaio
+2026-03-27 18:44:21+00:00 [Note] [Entrypoint]: Database files initialized
+2026-03-27 18:44:21+00:00 [Note] [Entrypoint]: Starting temporary server
+2026-03-27 18:44:21+00:00 [Note] [Entrypoint]: Waiting for server startup
+2026-03-27 18:44:21 0 [Note] Starting MariaDB 10.11.16-MariaDB-ubu2204 source revision 3218602d3100db9ce7a875511a591cddc173cc16 server_uid /RROokfkfKEMiipiJ7D80seilFI= as process 96
+2026-03-27 18:44:21 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2026-03-27 18:44:21 0 [Note] InnoDB: Number of transaction pools: 1
+2026-03-27 18:44:21 0 [Note] InnoDB: Using ARMv8 crc32 instructions
+2026-03-27 18:44:21 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+create_uring failed: falling back to libaio
+2026-03-27 18:44:21 0 [Note] InnoDB: Using Linux native AIO
+2026-03-27 18:44:21 0 [Note] InnoDB: innodb_buffer_pool_size_max=128m, innodb_buffer_pool_size=128m
+2026-03-27 18:44:21 0 [Note] InnoDB: Completed initialization of buffer pool
+2026-03-27 18:44:21 0 [Note] InnoDB: File system buffers for log disabled (block size=512 bytes)
+2026-03-27 18:44:21 0 [Note] InnoDB: End of log at LSN=44942
+2026-03-27 18:44:21 0 [Note] InnoDB: 128 rollback segments are active.
+2026-03-27 18:44:21 0 [Note] InnoDB: Setting file './ibtmp1' size to 12.000MiB. Physically writing the file full; Please wait ...
+2026-03-27 18:44:21 0 [Note] InnoDB: File './ibtmp1' size is now 12.000MiB.
+2026-03-27 18:44:21 0 [Note] InnoDB: log sequence number 44942; transaction id 14
+2026-03-27 18:44:21 0 [Note] Plugin 'FEEDBACK' is disabled.
+2026-03-27 18:44:21 0 [Note] mariadbd: ready for connections.
+Version: '10.11.16-MariaDB-ubu2204'  socket: '/run/mysqld/mysqld.sock'  port: 0  mariadb.org binary distribution
+2026-03-27 18:44:22+00:00 [Note] [Entrypoint]: Temporary server started.
+2026-03-27 18:44:26 5 [Warning] Access denied for user 'root'@'localhost' (using password: YES)
+2026-03-27 18:44:26+00:00 [Note] [Entrypoint]: Creating database chaves_professores
+2026-03-27 18:44:26+00:00 [Note] [Entrypoint]: Creating user app_chaves
+2026-03-27 18:44:26+00:00 [Note] [Entrypoint]: Giving user app_chaves access to schema chaves_professores
+2026-03-27 18:44:26+00:00 [Note] [Entrypoint]: Securing system users (equivalent to running mysql_secure_installation)
+
+2026-03-27 18:44:27+00:00 [Note] [Entrypoint]: /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01_setup.sql
+ERROR: Can't read from a directory 'stdin'
+2026-03-27 18:44:27+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:10.11.16+maria~ubu2204 started.
+2026-03-27 18:44:28+00:00 [Warn] [Entrypoint]: /sys/fs/cgroup///memory.pressure not writable, functionality unavailable to MariaDB
+2026-03-27 18:44:28+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+2026-03-27 18:44:28+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:10.11.16+maria~ubu2204 started.
+2026-03-27 18:44:28+00:00 [Note] [Entrypoint]: MariaDB upgrade not required
+2026-03-27 18:44:28 0 [Note] Starting MariaDB 10.11.16-MariaDB-ubu2204 source revision 3218602d3100db9ce7a875511a591cddc173cc16 server_uid eiNiafVWPiEwtGjFpQaGLrg62Ug= as process 1
+2026-03-27 18:44:28 0 [Note] mariadbd: Aria engine: starting recovery
+recovered pages: 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100% (0.4 seconds); tables to flush: 5 4 3 2 1 0
+ (0.1 seconds); 
+2026-03-27 18:44:29 0 [Note] mariadbd: Aria engine: recovery done
+2026-03-27 18:44:29 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2026-03-27 18:44:29 0 [Note] InnoDB: Number of transaction pools: 1
+2026-03-27 18:44:29 0 [Note] InnoDB: Using ARMv8 crc32 instructions
+2026-03-27 18:44:29 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+create_uring failed: falling back to libaio
+2026-03-27 18:44:29 0 [Note] InnoDB: Using Linux native AIO
+2026-03-27 18:44:29 0 [Note] InnoDB: innodb_buffer_pool_size_max=128m, innodb_buffer_pool_size=128m
+2026-03-27 18:44:29 0 [Note] InnoDB: Completed initialization of buffer pool
+2026-03-27 18:44:29 0 [Note] InnoDB: File system buffers for log disabled (block size=512 bytes)
+2026-03-27 18:44:29 0 [Note] InnoDB: End of log at LSN=44942
+2026-03-27 18:44:29 0 [Note] InnoDB: 128 rollback segments are active.
+2026-03-27 18:44:29 0 [Note] InnoDB: Removed temporary tablespace data file: "./ibtmp1"
+2026-03-27 18:44:29 0 [Note] InnoDB: Setting file './ibtmp1' size to 12.000MiB. Physically writing the file full; Please wait ...
+2026-03-27 18:44:29 0 [Note] InnoDB: File './ibtmp1' size is now 12.000MiB.
+2026-03-27 18:44:29 0 [Note] InnoDB: log sequence number 44942; transaction id 14
+2026-03-27 18:44:29 0 [Note] InnoDB: Loading buffer pool(s) from /var/lib/mysql/ib_buffer_pool
+2026-03-27 18:44:29 0 [Note] InnoDB: Cannot open '/var/lib/mysql/ib_buffer_pool' for reading: No such file or directory
+2026-03-27 18:44:29 0 [Note] Plugin 'FEEDBACK' is disabled.
+2026-03-27 18:44:29 0 [Warning] You need to use --log-bin to make --expire-logs-days or --binlog-expire-logs-seconds work.
+2026-03-27 18:44:29 0 [Note] Server socket created on IP: '0.0.0.0', port: '3306'.
+2026-03-27 18:44:29 0 [Note] Server socket created on IP: '::', port: '3306'.
+2026-03-27 18:44:29 0 [Note] mariadbd: ready for connections.
+Version: '10.11.16-MariaDB-ubu2204'  socket: '/run/mysqld/mysqld.sock'  port: 3306  mariadb.org binary distribution
+
+
+
+
+chaves@RaspberryChaves:~/App_Clav $ docker logs chaves_app
+
+🚀 Iniciando Sistema de Controle de Chaves Claviculário...
+📅 Data/Hora do Raspberry: 2026-03-27 18:44:27
+
+/usr/local/lib/python3.11/site-packages/mfrc522/MFRC522.py:151: RuntimeWarning: This channel is already in use, continuing anyway.  Use GPIO.setwarnings(False) to disable warnings.
+  GPIO.setup(pin_rst, GPIO.OUT)
+✅ Leitor de Sensor MFRC522 inicializado fisicamente.
+🔗 Abrindo conexão com o container MariaDB...
+[18:44:27] Tentando conectar ao banco (1/5)...
+⚠️ Banco ainda não respondeu (Erro 2005). Aguardando 5 segundos...
+[18:44:32] Tentando conectar ao banco (2/5)...
+✅ Conectado ao MariaDB com sucesso!
+
+==================================================
+🏁 ESTADO: IDLE (Aguardando leitura do crachá...)
+
+[Aguardando leitura do crachá na porta física...]
