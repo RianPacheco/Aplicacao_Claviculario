@@ -1,0 +1,4 @@
+mysql-connector-python==8.3.0
+mfrc522==0.0.7
+RPi.GPIO==0.7.1
+smbus2==0.4.3

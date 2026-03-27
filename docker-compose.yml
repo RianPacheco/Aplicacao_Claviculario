@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+
+  db:
+    image: mariadb:11
+    container_name: chaves_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: chaves_professores
+      MYSQL_USER: app_chaves
+      MYSQL_PASSWORD: chaves123
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./setup_mariadb_simplificado.sql:/docker-entrypoint-initdb.d/01_setup.sql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build: .
+    container_name: chaves_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_USER: app_chaves
+      DB_PASSWORD: chaves123
+      DB_NAME: chaves_professores
+    # Acesso ao hardware da Raspberry Pi
+    privileged: true
+    devices:
+      - /dev/spidev0.0:/dev/spidev0.0   # RFID via SPI
+      - /dev/i2c-1:/dev/i2c-1            # LCD via I2C
+    volumes:
+      - .:/app
+
+volumes:
+  db_data:
